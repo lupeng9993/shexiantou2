@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">USB 摄像头</string>
+    <string name="accessibility_desc">用于监听键盘快捷键，实现一键打开/关闭摄像头画面。只读取按键，不读取屏幕内容，不采集任何个人信息。</string>
+</resources>
