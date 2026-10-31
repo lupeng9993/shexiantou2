@@ -666,6 +666,15 @@ class MainActivity : Activity(), CameraCore.Listener {
         else -> "关"
     }
 
+    /** 只保留 Ctrl / Alt / Shift（META_MODIFIER_MASK 是系统隐藏常量，公开 SDK 里没有）。 */
+    private fun eventMods(event: KeyEvent): Int {
+        var mods = 0
+        if (event.isCtrlPressed) mods = mods or KeyEvent.META_CTRL_ON
+        if (event.isAltPressed) mods = mods or KeyEvent.META_ALT_ON
+        if (event.isShiftPressed) mods = mods or KeyEvent.META_SHIFT_ON
+        return mods
+    }
+
     private fun keyLabel(code: Int, mods: Int): String {
         val name = KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
         val sb = StringBuilder()
@@ -810,7 +819,7 @@ class MainActivity : Activity(), CameraCore.Listener {
                 return@setOnKeyListener false
             }
 
-            val mods = event.metaState and KeyEvent.META_MODIFIER_MASK
+            val mods = eventMods(event)
             Prefs.setHotkey(this, keyCode, mods)
             Prefs.setHotkeyEnabled(this, true)
             handler.removeCallbacks(tick)

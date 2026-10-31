@@ -41,7 +41,7 @@ class HotkeyService : AccessibilityService() {
         if (event.keyCode != Prefs.hotkeyCode(this)) return false
 
         val wantedMods = Prefs.hotkeyMods(this)
-        val actualMods = event.metaState and KeyEvent.META_MODIFIER_MASK
+        val actualMods = modifiersOf(event)
         if (actualMods != wantedMods) return false
 
         if (AppState.isVisible) {
@@ -50,6 +50,15 @@ class HotkeyService : AccessibilityService() {
             launchApp()
         }
         return true
+    }
+
+    /** 只保留 Ctrl / Alt / Shift（META_MODIFIER_MASK 是系统隐藏常量，公开 SDK 里没有）。 */
+    private fun modifiersOf(event: KeyEvent): Int {
+        var mods = 0
+        if (event.isCtrlPressed) mods = mods or KeyEvent.META_CTRL_ON
+        if (event.isAltPressed) mods = mods or KeyEvent.META_ALT_ON
+        if (event.isShiftPressed) mods = mods or KeyEvent.META_SHIFT_ON
+        return mods
     }
 
     private fun launchApp() {
