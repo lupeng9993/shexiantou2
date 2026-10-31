@@ -1,0 +1,58 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # 直接用运行器自带的 Android SDK。
+      # 不要用 android-actions/setup-android@v3：它会执行 `sdkmanager tools`，
+      # 新版 cmdline-tools 已没有 tools 包，必然失败。
+      - name: Install Android SDK packages
+        run: |
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          "$SDKMANAGER" --version
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install Gradle 8.9
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gradle.zip" https://services.gradle.org/distributions/gradle-8.9-bin.zip
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-8.9/bin" >> "$GITHUB_PATH"
+
+      - name: Locate project
+        id: locate
+        run: |
+          FILE="$(find . -maxdepth 3 -name settings.gradle | head -n 1)"
+          DIR="$(dirname "$FILE")"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+          echo "Project directory: $DIR"
+
+      - name: Build debug APK
+        run: gradle -p "${{ steps.locate.outputs.dir }}" :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: usbcam-debug-apk
+          path: '**/build/outputs/apk/debug/*.apk'
+          if-no-files-found: error
